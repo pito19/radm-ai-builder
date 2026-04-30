@@ -1533,47 +1533,6 @@ EOF
 # 12. PACKER TEMPLATE
 # ============================================================================
 
-cat > packer-template.json << 'EOF'
-{
-  "builders": [
-    {
-      "type": "qemu",
-      "iso_url": "ubuntu-24.04.4-live-server-amd64.iso",
-      "iso_checksum": "sha256:e907d92eeec9df64163a7e454cbc8d7755e8ddc7ed42f99dbc80c40f1a138433",
-      "disk_size": "204800",
-      "memory": 8192,
-      "cpus": 4,
-      "ssh_username": "radm",
-      "ssh_password": "radm2024",
-      "ssh_timeout": "60m",
-      "shutdown_command": "sudo poweroff",
-      "output_directory": "output/radm-iso",
-      "format": "qcow2",
-      "net_device": "virtio-net",
-      "disk_interface": "virtio",
-      "boot_wait": "10s",
-      "boot_command": [
-        "<esc><wait>",
-        "c<wait>",
-        "linux /casper/vmlinuz autoinstall ds=nocloud;s=/cdrom/http/preseed/ ---<enter>",
-        "initrd /casper/initrd<enter>",
-        "boot<enter>"
-      ],
-      "http_directory": "http",
-      "headless": true
-    }
-  ],
-  "post-processors": [
-    {
-      "type": "shell-local",
-      "inline": [
-        "cd output/radm-iso",
-        "xorriso -as mkisofs -r -V 'RADM_AI_v1_0' -J -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -o ../../radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso ."
-      ]
-    }
-  ]
-}
-EOF
 
 # ============================================================================
 # 13. BUILD, SIGNATURE, VALIDATION
@@ -1606,9 +1565,38 @@ echo "   ✅ SNMP setup (script)"
 echo "   ✅ kexec update (script)"
 echo "   ✅ Pré-build checks passed"
 
-echo -e "\n${GREEN}[4/20] Construction ISO avec Packer...${NC}"
-export VERSION="$VERSION" BUILD_DATE="$BUILD_DATE"
-packer build packer-template.json
+echo -e "\n${GREEN}[4/20] Construction ISO avec xorriso...${NC}"
+
+# Créer le répertoire de build
+mkdir -p iso_build
+
+# Copier les fichiers preseed et scripts
+cp -r http iso_build/
+cp -r iso iso_build/ 2>/dev/null || true
+cp -r .disk iso_build/ 2>/dev/null || true
+
+# Télécharger l'ISO Ubuntu (une seule fois, en cache)
+if [ ! -f "ubuntu-24.04.4-live-server-amd64.iso" ]; then
+    wget -q --show-progress -O ubuntu-24.04.4-live-server-amd64.iso \
+         https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso
+fi
+
+# Extraire les fichiers bootables
+mkdir -p iso_extract
+sudo mount -o loop ubuntu-24.04.4-live-server-amd64.iso iso_extract
+cp -r iso_extract/boot iso_build/
+cp iso_extract/casper/initrd iso_build/casper/ 2>/dev/null || mkdir -p iso_build/casper && cp iso_extract/casper/* iso_build/casper/ 2>/dev/null
+cp iso_extract/isolinux/* iso_build/isolinux/ 2>/dev/null || true
+cp iso_extract/EFI/* iso_build/EFI/ 2>/dev/null || true
+sudo umount iso_extract
+rmdir iso_extract
+
+# Construire l'ISO finale
+xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
+    -J -b isolinux/isolinux.bin -c isolinux/boot.cat \
+    -no-emul-boot -boot-load-size 4 -boot-info-table \
+    -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot \
+    -o radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso iso_build/
 
 echo -e "\n${GREEN}[5/20] ISO générée !${NC}"
 cp output/*.iso radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso 2>/dev/null
