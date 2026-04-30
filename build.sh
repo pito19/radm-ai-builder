@@ -1573,27 +1573,23 @@ mkdir -p iso_build
 # Extraire TOUTE l'ISO Ubuntu
 mkdir -p iso_extract
 sudo mount -o loop ubuntu-24.04.4-live-server-amd64.iso iso_extract
-cp -r iso_extract/* iso_build/
+cp -avr iso_extract/* iso_build/
 sudo umount iso_extract
 rmdir iso_extract
 
 # Remplacer par nos versions personnalisées
-cp -r http/* iso_build/ 2>/dev/null || true
-cp -r iso/* iso_build/ 2>/dev/null || true
+cp -avr http/* iso_build/ 2>/dev/null || true
+cp -avr iso/* iso_build/ 2>/dev/null || true
 
 # Construire l'ISO finale
 xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
     -J -joliet-long \
-    -b isolinux/isolinux.bin -c isolinux/boot.cat \
     -no-emul-boot -boot-load-size 4 -boot-info-table \
     -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot \
     -o radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso iso_build/
 
-echo -e "${GREEN}[5/20] ISO générée !${NC}"
-ls -lh radm-ai-v1.0-*.iso
-
 echo -e "\n${GREEN}[5/20] ISO générée !${NC}"
-cp output/*.iso radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso 2>/dev/null
+ls -lh radm-ai-v1.0-*.iso
 
 echo -e "\n${GREEN}[6/20] Checksum SHA256...${NC}"
 sha256sum radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso > radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso.sha256
