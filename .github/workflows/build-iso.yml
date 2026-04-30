@@ -19,6 +19,9 @@ jobs:
           sudo apt update
           sudo apt install -y xorriso whois gnupg wget unzip dos2unix
 
+      - name: Install QEMU
+        run: sudo apt install -y qemu-system-x86 qemu-utils
+
       - name: Install Packer 1.15.3
         run: |
           wget https://releases.hashicorp.com/packer/1.15.3/packer_1.15.3_linux_amd64.zip
@@ -27,8 +30,7 @@ jobs:
           packer --version
 
       - name: Install Packer QEMU plugin
-        run: |
-          packer plugins install github.com/hashicorp/qemu
+        run: packer plugins install github.com/hashicorp/qemu
 
       - name: Convert script to Unix format
         run: dos2unix build.sh
