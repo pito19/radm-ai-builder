@@ -8,7 +8,7 @@ on:
 jobs:
   build-iso:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -31,6 +31,21 @@ jobs:
 
       - name: Install Packer QEMU plugin
         run: packer plugins install github.com/hashicorp/qemu
+
+      - name: Download Ubuntu ISO 24.04.3
+        run: |
+          echo "Téléchargement de l'ISO Ubuntu 24.04.3..."
+          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+               --progress=bar:force \
+               -O ubuntu-24.04.3-live-server-amd64.iso \
+               https://old-releases.ubuntu.com/releases/noble/ubuntu-24.04.3-live-server-amd64.iso
+          ls -lh ubuntu-24.04.3-live-server-amd64.iso
+
+      - name: Verify ISO checksum
+        run: |
+          echo "fd6bc7d673159ae03d37d2f12248b54bebc604aca47795573a23ba03c488ffd3  ubuntu-24.04.3-live-server-amd64.iso" > CHECKSUM
+          sha256sum -c CHECKSUM
+          echo "✅ Checksum vérifié"
 
       - name: Convert script to Unix format
         run: dos2unix build.sh
