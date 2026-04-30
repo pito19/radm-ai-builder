@@ -44,7 +44,7 @@ rm -rf output/* radm-ai-v1.0-*.iso* 2>/dev/null || true
 # ============================================================================
 
 echo -e "${GREEN}[1/20] Génération preseed...${NC}"
-PASSWORD_HASH=$(mkpasswd --method=sha-512 --salt=$(openssl rand -base64 12) radm2024 2>/dev/null)
+PASSWORD_HASH=$(openssl passwd -6 -salt $(openssl rand -base64 12 | tr -d '=' | cut -c1-16) radm2024 2>/dev/null)
 if [ -z "$PASSWORD_HASH" ]; then
     PASSWORD_HASH='$6$rounds=656000$abcdefghijklmnop$ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 fi
