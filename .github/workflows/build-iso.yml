@@ -32,8 +32,11 @@ jobs:
       - name: Make build script executable
         run: chmod +x build.sh
 
-      - name: Build ISO
-        run: ./build.sh
+      - name: Run build script with debug
+        run: |
+          set -x
+          ./build.sh
+        shell: bash
 
       - name: List generated files
         run: ls -la *.iso* 2>/dev/null || echo "No ISO found"
