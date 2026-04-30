@@ -1,4 +1,4 @@
-name: Build RADM AI ISO v4.2
+name: Build RADM AI ISO v1.0
 
 on:
   push:
@@ -19,11 +19,11 @@ jobs:
           sudo apt update
           sudo apt install -y xorriso whois gnupg wget unzip dos2unix
 
-      - name: Install Packer
+      - name: Install Packer 1.15.3
         run: |
-          wget https://releases.hashicorp.com/packer/1.11.2/packer_1.11.2_linux_amd64.zip
-          sudo unzip -o packer_1.11.2_linux_amd64.zip -d /usr/local/bin/
-          rm packer_1.11.2_linux_amd64.zip
+          wget https://releases.hashicorp.com/packer/1.15.3/packer_1.15.3_linux_amd64.zip
+          sudo unzip -o packer_1.15.3_linux_amd64.zip -d /usr/local/bin/
+          rm packer_1.15.3_linux_amd64.zip
           packer --version
 
       - name: Convert script to Unix format
@@ -32,7 +32,7 @@ jobs:
       - name: Make build script executable
         run: chmod +x build.sh
 
-      - name: Debug build script
+      - name: Debug script
         run: |
           echo "=== Script content check ==="
           head -20 build.sh
@@ -40,31 +40,24 @@ jobs:
           ls -la build.sh
           echo "=== First line check ==="
           head -1 build.sh | od -c
-        shell: bash
 
-      - name: Run build script with debug
+      - name: Run build script
         run: |
           set -x
           ./build.sh
         shell: bash
 
-      - name: Make build script executable
-        run: chmod +x build.sh
-
-      - name: Run build script
-        run: bash build.sh
-
       - name: List generated files
-        run: ls -la *.iso* 2>/dev/null || echo "No ISO found"
+        run: ls -la *.iso* 2>/dev/null || echo "No ISO files found"
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
-          name: radm-ai-v4.2-iso
+          name: radm-ai-v1.0-iso
           path: |
-            radm-ai-v4.2-*.iso
-            radm-ai-v4.2-*.iso.sha256
-            radm-ai-v4.2-*.iso.asc
-            radm-ai-v4.2-*.pubkey
+            radm-ai-v1.0-*.iso
+            radm-ai-v1.0-*.iso.sha256
+            radm-ai-v1.0-*.iso.asc
+            radm-ai-v1.0-*.pubkey
           compression-level: 0
           retention-days: 30
