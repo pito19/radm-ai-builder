@@ -1549,7 +1549,6 @@ cat > packer-template.json << 'EOF'
       "shutdown_command": "sudo poweroff",
       "output_directory": "output/radm-iso",
       "format": "qcow2",
-      "accelerator": "kvm",
       "net_device": "virtio-net",
       "disk_interface": "virtio",
       "boot_wait": "10s",
