@@ -1,0 +1,58 @@
+name: Build RADM AI ISO v4.2
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # Permet de lancer manuellement
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y xorriso whois gnupg wget unzip
+
+      - name: Install Packer
+        run: |
+          wget https://releases.hashicorp.com/packer/1.11.2/packer_1.11.2_linux_amd64.zip
+          sudo unzip -o packer_1.11.2_linux_amd64.zip -d /usr/local/bin/
+          rm packer_1.11.2_linux_amd64.zip
+          packer --version
+
+      - name: Make build script executable
+        run: chmod +x build.sh
+
+      - name: Build ISO
+        run: ./build.sh
+
+      - name: List generated files
+        run: ls -la *.iso* 2>/dev/null || echo "No ISO found"
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: radm-ai-v4.2-iso
+          path: |
+            radm-ai-v4.2-*.iso
+            radm-ai-v4.2-*.iso.sha256
+            radm-ai-v4.2-*.iso.asc
+            radm-ai-v4.2-*.pubkey
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload ISO as release asset (optional)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            radm-ai-v4.2-*.iso
+            radm-ai-v4.2-*.iso.sha256
+            radm-ai-v4.2-*.iso.asc
+            radm-ai-v4.2-*.pubkey
