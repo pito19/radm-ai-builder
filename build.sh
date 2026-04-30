@@ -1565,19 +1565,18 @@ echo "   ✅ SNMP setup (script)"
 echo "   ✅ kexec update (script)"
 echo "   ✅ Pré-build checks passed"
 
-echo -e "\n${GREEN}[4/20] Construction ISO industrielle...${NC}"
+echo -e "\n${GREEN}[4/20] Construction ISO industrielle (UEFI only)...${NC}"
 
 # Variables
 ISO_SOURCE="ubuntu-24.04.4-live-server-amd64.iso"
 ISO_OUTPUT="radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso"
 WORK_DIR="iso_work"
 
-# 1. Préparation
-rm -rf "$WORK_DIR"
-mkdir -p "$WORK_DIR"
-mkdir -p iso_build
+# 1. Nettoyage préparation
+rm -rf "$WORK_DIR" iso_build 2>/dev/null
+mkdir -p "$WORK_DIR" iso_build
 
-# 2. Monter l'ISO source
+# 2. Monter l'ISO source en lecture seule
 sudo mount -o loop,ro "$ISO_SOURCE" "$WORK_DIR"
 
 # 3. Copier avec préservation des attributs
@@ -1587,41 +1586,41 @@ cp -a "$WORK_DIR"/. iso_build/
 sudo umount "$WORK_DIR"
 rmdir "$WORK_DIR"
 
-# 5. Injection des fichiers RADM (avec backup)
+# 5. Injection des fichiers RADM
 cp -a http/* iso_build/ 2>/dev/null || true
 cp -a iso/* iso_build/ 2>/dev/null || true
 
-# 6. Vérification des fichiers de boot
-if [ ! -f "iso_build/isolinux/isolinux.bin" ]; then
-    echo "   ❌ ERREUR: isolinux.bin manquant"
+# 6. Vérification des fichiers UEFI (OBLIGATOIRE)
+EFI_FILE=""
+if [ -f "iso_build/boot/grub/efi.img" ]; then
+    EFI_FILE="boot/grub/efi.img"
+elif [ -f "iso_build/EFI/BOOT/grubx64.efi" ]; then
+    EFI_FILE="EFI/BOOT/grubx64.efi"
+else
+    echo "   ❌ ERREUR CRITIQUE: Aucun fichier UEFI trouvé"
+    echo "   L'ISO ne serait pas bootable en mode UEFI"
+    echo "   Construction annulée pour respecter les exigences OIVI"
     exit 1
 fi
 
-if [ ! -f "iso_build/boot/grub/efi.img" ] && [ ! -f "iso_build/EFI/BOOT/BOOTx64.EFI" ]; then
-    echo "   ⚠️ WARNING: fichier EFI non trouvé, mode BIOS uniquement"
-    EFI_OPT=""
-else
-    EFI_OPT="-eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -isohybrid-gpt-basdat"
-fi
+echo "   ✅ Fichier UEFI détecté: $EFI_FILE"
 
-# 7. Construction ISO (méthode industrielle éprouvée)
+# 7. Construction ISO (UEFI uniquement, pas de BIOS legacy)
 xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
     -J -joliet-long \
-    -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
-    -b isolinux/isolinux.bin -c isolinux/boot.cat \
-    -no-emul-boot -boot-load-size 4 -boot-info-table \
-    $EFI_OPT \
+    -eltorito-alt-boot -e "$EFI_FILE" -no-emul-boot \
+    -isohybrid-gpt-basdat \
     -o "$ISO_OUTPUT" iso_build/
 
-# 8. Vérification post-build
+# 8. Vérification post-build UEFI
 if [ -f "$ISO_OUTPUT" ]; then
-    echo "   ✅ ISO générée: $(ls -lh $ISO_OUTPUT | awk '{print $5}')"
+    echo "   ✅ ISO UEFI générée: $(ls -lh $ISO_OUTPUT | awk '{print $5}')"
     
-    # Test rapide de bootabilité
-    if file "$ISO_OUTPUT" | grep -q "ISO 9660"; then
-        echo "   ✅ Format ISO 9660 valide"
+    # Vérification de la présence UEFI dans l'ISO
+    if xorriso -indev "$ISO_OUTPUT" -toc 2>/dev/null | grep -q "El Torito"; then
+        echo "   ✅ Structure El Torito (UEFI) valide"
     else
-        echo "   ❌ ERREUR: Format ISO invalide"
+        echo "   ❌ ERREUR: Structure UEFI invalide"
         exit 1
     fi
 else
@@ -1629,7 +1628,7 @@ else
     exit 1
 fi
 
-echo -e "\n${GREEN}[5/20] ISO prête pour déploiement client${NC}"
+echo -e "\n${GREEN}[5/20] ISO UEFI prête pour déploiement client OIVI${NC}"
 ls -lh radm-ai-v1.0-*.iso
 
 echo -e "\n${GREEN}[6/20] Checksum SHA256...${NC}"
