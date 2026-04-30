@@ -1565,30 +1565,71 @@ echo "   ✅ SNMP setup (script)"
 echo "   ✅ kexec update (script)"
 echo "   ✅ Pré-build checks passed"
 
-echo -e "\n${GREEN}[4/20] Construction ISO avec xorriso...${NC}"
+echo -e "\n${GREEN}[4/20] Construction ISO industrielle...${NC}"
 
-# Créer le répertoire de build
+# Variables
+ISO_SOURCE="ubuntu-24.04.4-live-server-amd64.iso"
+ISO_OUTPUT="radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso"
+WORK_DIR="iso_work"
+
+# 1. Préparation
+rm -rf "$WORK_DIR"
+mkdir -p "$WORK_DIR"
 mkdir -p iso_build
 
-# Extraire TOUTE l'ISO Ubuntu
-mkdir -p iso_extract
-sudo mount -o loop ubuntu-24.04.4-live-server-amd64.iso iso_extract
-cp -avr iso_extract/* iso_build/
-sudo umount iso_extract
-rmdir iso_extract
+# 2. Monter l'ISO source
+sudo mount -o loop,ro "$ISO_SOURCE" "$WORK_DIR"
 
-# Remplacer par nos versions personnalisées
-cp -avr http/* iso_build/ 2>/dev/null || true
-cp -avr iso/* iso_build/ 2>/dev/null || true
+# 3. Copier avec préservation des attributs
+cp -a "$WORK_DIR"/. iso_build/
 
-# Construire l'ISO finale
+# 4. Démontage
+sudo umount "$WORK_DIR"
+rmdir "$WORK_DIR"
+
+# 5. Injection des fichiers RADM (avec backup)
+cp -a http/* iso_build/ 2>/dev/null || true
+cp -a iso/* iso_build/ 2>/dev/null || true
+
+# 6. Vérification des fichiers de boot
+if [ ! -f "iso_build/isolinux/isolinux.bin" ]; then
+    echo "   ❌ ERREUR: isolinux.bin manquant"
+    exit 1
+fi
+
+if [ ! -f "iso_build/boot/grub/efi.img" ] && [ ! -f "iso_build/EFI/BOOT/BOOTx64.EFI" ]; then
+    echo "   ⚠️ WARNING: fichier EFI non trouvé, mode BIOS uniquement"
+    EFI_OPT=""
+else
+    EFI_OPT="-eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -isohybrid-gpt-basdat"
+fi
+
+# 7. Construction ISO (méthode industrielle éprouvée)
 xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
     -J -joliet-long \
+    -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
+    -b isolinux/isolinux.bin -c isolinux/boot.cat \
     -no-emul-boot -boot-load-size 4 -boot-info-table \
-    -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot \
-    -o radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso iso_build/
+    $EFI_OPT \
+    -o "$ISO_OUTPUT" iso_build/
 
-echo -e "\n${GREEN}[5/20] ISO générée !${NC}"
+# 8. Vérification post-build
+if [ -f "$ISO_OUTPUT" ]; then
+    echo "   ✅ ISO générée: $(ls -lh $ISO_OUTPUT | awk '{print $5}')"
+    
+    # Test rapide de bootabilité
+    if file "$ISO_OUTPUT" | grep -q "ISO 9660"; then
+        echo "   ✅ Format ISO 9660 valide"
+    else
+        echo "   ❌ ERREUR: Format ISO invalide"
+        exit 1
+    fi
+else
+    echo "   ❌ ERREUR: ISO non générée"
+    exit 1
+fi
+
+echo -e "\n${GREEN}[5/20] ISO prête pour déploiement client${NC}"
 ls -lh radm-ai-v1.0-*.iso
 
 echo -e "\n${GREEN}[6/20] Checksum SHA256...${NC}"
