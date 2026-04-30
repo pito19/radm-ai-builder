@@ -32,36 +32,19 @@ jobs:
       - name: Install Packer QEMU plugin
         run: packer plugins install github.com/hashicorp/qemu
 
-      - name: Download Ubuntu ISO 24.04.4
+      - name: Download Ubuntu ISO
         run: |
           echo "Téléchargement de l'ISO Ubuntu 24.04.4..."
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --progress=bar:force \
+          wget --progress=bar:force \
                -O ubuntu-24.04.4-live-server-amd64.iso \
                https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso
           ls -lh ubuntu-24.04.4-live-server-amd64.iso
-
-      - name: Verify ISO checksum
-        run: |
-          wget https://releases.ubuntu.com/24.04.4/SHA256SUMS -O SHA256SUMS
-          grep ubuntu-24.04.4-live-server-amd64.iso SHA256SUMS > CHECKSUM
-          sha256sum -c CHECKSUM
-          echo "✅ Checksum vérifié"
 
       - name: Convert script to Unix format
         run: dos2unix build.sh
 
       - name: Make build script executable
         run: chmod +x build.sh
-
-      - name: Debug script
-        run: |
-          echo "=== Script content check ==="
-          head -20 build.sh
-          echo "=== Script size ==="
-          ls -la build.sh
-          echo "=== First line check ==="
-          head -1 build.sh | od -c
 
       - name: Run build script
         run: |

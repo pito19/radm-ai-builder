@@ -1539,7 +1539,7 @@ cat > packer-template.json << 'EOF'
     {
       "type": "qemu",
       "iso_url": "ubuntu-24.04.4-live-server-amd64.iso",
-      "iso_checksum": "file:./SHA256SUMS",
+      "iso_checksum": "sha256:e907d92eeec9df64163a7e454cbc8d7755e8ddc7ed42f99dbc80c40f1a138433",
       "disk_size": "204800",
       "memory": 8192,
       "cpus": 4,
