@@ -1570,33 +1570,27 @@ echo -e "\n${GREEN}[4/20] Construction ISO avec xorriso...${NC}"
 # Créer le répertoire de build
 mkdir -p iso_build
 
-# Copier les fichiers preseed et scripts
-cp -r http iso_build/
-cp -r iso iso_build/ 2>/dev/null || true
-cp -r .disk iso_build/ 2>/dev/null || true
-
-# Télécharger l'ISO Ubuntu (une seule fois, en cache)
-if [ ! -f "ubuntu-24.04.4-live-server-amd64.iso" ]; then
-    wget -q --show-progress -O ubuntu-24.04.4-live-server-amd64.iso \
-         https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso
-fi
-
-# Extraire les fichiers bootables
+# Extraire TOUTE l'ISO Ubuntu
 mkdir -p iso_extract
 sudo mount -o loop ubuntu-24.04.4-live-server-amd64.iso iso_extract
-cp -r iso_extract/boot iso_build/
-cp iso_extract/casper/initrd iso_build/casper/ 2>/dev/null || mkdir -p iso_build/casper && cp iso_extract/casper/* iso_build/casper/ 2>/dev/null
-cp iso_extract/isolinux/* iso_build/isolinux/ 2>/dev/null || true
-cp iso_extract/EFI/* iso_build/EFI/ 2>/dev/null || true
+cp -r iso_extract/* iso_build/
 sudo umount iso_extract
 rmdir iso_extract
 
+# Remplacer par nos versions personnalisées
+cp -r http/* iso_build/ 2>/dev/null || true
+cp -r iso/* iso_build/ 2>/dev/null || true
+
 # Construire l'ISO finale
 xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
-    -J -b isolinux/isolinux.bin -c isolinux/boot.cat \
+    -J -joliet-long \
+    -b isolinux/isolinux.bin -c isolinux/boot.cat \
     -no-emul-boot -boot-load-size 4 -boot-info-table \
     -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot \
     -o radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso iso_build/
+
+echo -e "${GREEN}[5/20] ISO générée !${NC}"
+ls -lh radm-ai-v1.0-*.iso
 
 echo -e "\n${GREEN}[5/20] ISO générée !${NC}"
 cp output/*.iso radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso 2>/dev/null
