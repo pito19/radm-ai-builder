@@ -1539,8 +1539,8 @@ cat > packer-template.json << 'EOF'
   "builders": [
     {
       "type": "qemu",
-      "iso_url": "https://old-releases.ubuntu.com/releases/noble/ubuntu-24.04.2-live-server-amd64.iso",
-      "iso_checksum": "sha256:5fda2c2c81e3fbfbecf57f2943fcb33b56e1d7c90b391e66740ec6c038ffd697",
+      "iso_url": "https://old-releases.ubuntu.com/releases/noble/ubuntu-24.04.3-live-server-amd64.iso",
+      "iso_checksum": "sha256:fd6bc7d673159ae03d37d2f12248b54bebc604aca47795573a23ba03c488ffd3",
       "disk_size": "204800",
       "memory": 8192,
       "cpus": 4,
