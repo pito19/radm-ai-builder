@@ -14,7 +14,7 @@
 # Usage: ./build.sh
 # =============================================================================
 
-set -euo pipefail
+set -eo pipefail
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -52,8 +52,10 @@ rm -rf output/* radm-ai-v4.2-*.iso* 2>/dev/null || true
 # ============================================================================
 
 echo -e "${GREEN}[1/20] Génération preseed...${NC}"
-PASSWORD_HASH=$(mkpasswd --method=sha-512 --salt=$(openssl rand -base64 12) radm2024 2>/dev/null || echo '$6$rounds=656000$abcdefghijklmnop$ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-
+PASSWORD_HASH=$(mkpasswd --method=sha-512 --salt=$(openssl rand -base64 12) radm2024 2>/dev/null)
+if [ -z "$PASSWORD_HASH" ]; then
+    PASSWORD_HASH='$6$rounds=656000$abcdefghijklmnop$ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+fi
 cat > http/preseed/radm-preseed.cfg << EOF
 # RADM AI v4.2 - Ubuntu 24.04 Auto-install
 d-i debian-installer/locale string en_US
@@ -303,13 +305,10 @@ DISKINFO
 # Activer Docker
 chroot /target systemctl enable docker
 EOF
-```
-
----
 
 ## 🚀 RADM AI v4.2 – Script build.sh complet (Bloc 2/3)
 
-```bash
+
 # ============================================================================
 # 3. SCRIPT HARDENING (01 à 06)
 # ============================================================================
@@ -679,13 +678,9 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 WATCHDOG
-```
-
----
 
 ## 🚀 RADM AI v4.2 – Script build.sh complet (Bloc 3/3)
 
-```bash
 # ============================================================================
 # 6. CONFIGS SYSTÈME
 # ============================================================================
