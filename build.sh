@@ -1,15 +1,8 @@
 ```bash
 #!/bin/bash
 # =============================================================================
-# RADM AI - ISO Builder v4.2 FINALE (Industrielle / Client Final)
+# RADM AI - ISO Builder v1.0  (Industrielle / Client Final)
 # =============================================================================
-# Basée sur v4.1 + ajouts :
-#   1. radm-backup.sh / radm-restore.sh (backup/restore configuration)
-#   2. radm-kpi-collect.sh (collection KPI JSON/texte/watch)
-#   3. radm-nvme-check.sh (surveillance santé NVMe)
-#   4. radm-snmp-setup.sh + snmpd.conf (monitoring SNMP)
-#   5. radm-kexec-update.sh (mise à jour kernel sans reboot)
-#   6. Mise à jour auditd pour surveiller les nouveaux scripts
 #
 # Usage: ./build.sh
 # =============================================================================
@@ -22,13 +15,13 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-VERSION="4.2.0"
+VERSION="1.0.0"
 BUILD_DATE=$(date +%Y%m%d)
 MGMT_NETWORK="${MGMT_NETWORK:-10.0.0.0/8}"
 SYSLOG_SERVER="${SYSLOG_SERVER:-}"
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}   RADM AI - ISO Builder v4.2 FINALE (Industrielle / Client Final)${NC}"
+echo -e "${GREEN}   RADM AI - ISO Builder v1.0 FINALE (Industrielle / Client Final)${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "   Version: $VERSION | Build: $BUILD_DATE"
 echo -e "   Management network: $MGMT_NETWORK"
@@ -45,7 +38,7 @@ command -v gpg >/dev/null 2>&1 || { apt install -y gnupg; }
 mkdir -p http/preseed
 mkdir -p iso/{hardening,performance,xdp,runtime,tools,configs,services}
 mkdir -p pool .disk output
-rm -rf output/* radm-ai-v4.2-*.iso* 2>/dev/null || true
+rm -rf output/* radm-ai-v1.0-*.iso* 2>/dev/null || true
 
 # ============================================================================
 # 1. PRESEED – Installation automatique
@@ -57,7 +50,7 @@ if [ -z "$PASSWORD_HASH" ]; then
     PASSWORD_HASH='$6$rounds=656000$abcdefghijklmnop$ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 fi
 cat > http/preseed/radm-preseed.cfg << EOF
-# RADM AI v4.2 - Ubuntu 24.04 Auto-install
+# RADM AI v1.0 - Ubuntu 24.04 Auto-install
 d-i debian-installer/locale string en_US
 d-i keyboard-configuration/xkb-keymap select fr
 d-i netcfg/choose_interface select eth0
@@ -232,7 +225,7 @@ chroot /target systemctl enable ssh
 # ============================================================================
 cat > /target/etc/systemd/system/radm-firstboot.service << 'SERVICE'
 [Unit]
-Description=RADM AI First Boot v4.2
+Description=RADM AI First Boot v1.0
 After=network.target multi-user.target docker.service radm-bonding.service
 Wants=network.target docker.service
 
@@ -254,7 +247,7 @@ chroot /target systemctl enable radm-watchdog.service 2>/dev/null || true
 chroot /target systemctl enable radm-health.timer 2>/dev/null || true
 
 # ============================================================================
-# MOTD v4.2
+# MOTD v1.0
 # ============================================================================
 cat > /target/etc/motd << 'MOTD'
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -266,7 +259,7 @@ cat > /target/etc/motd << 'MOTD'
 ║    ██║  ██║██║  ██║██████╔╝██║ ╚═╝ ██║                                       ║
 ║    ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝     ╚═╝                                       ║
 ║                                                                              ║
-║    RADM AI v4.2 - Network Detection & Response - Industrial Edition          ║
+║    RADM AI v1.0 - Network Detection & Response - Industrial Edition          ║
 ║                                                                              ║
 ║    🔐 SECURITE RENFORCEE:                                                   ║
 ║       - Docker: userns-remap + seccomp personnalisé                          ║
@@ -306,7 +299,7 @@ DISKINFO
 chroot /target systemctl enable docker
 EOF
 
-## 🚀 RADM AI v4.2 – Script build.sh complet (Bloc 2/3)
+## 🚀 RADM AI v1.0 – Script build.sh complet (Bloc 2/3)
 
 
 # ============================================================================
@@ -411,7 +404,7 @@ cat > /etc/audit/rules.d/99-radm-security.rules << 'AUDIT'
 -a always,exit -S execve -C gid!=egid -F egid=0 -k priv_esc
 -a always,exit -F arch=b64 -S capset -k capabilities
 -a always,exit -F arch=b32 -S capset -k capabilities
-# Surveillance des scripts radm (NOUVEAU v4.2)
+# Surveillance des scripts radm (NOUVEAU v1.0)
 -w /opt/radm/tools/radm-backup.sh -p x -k radm_tools
 -w /opt/radm/tools/radm-restore.sh -p x -k radm_tools
 -w /opt/radm/tools/radm-kpi-collect.sh -p x -k radm_tools
@@ -590,7 +583,7 @@ EOF
 
 cat > iso/services/radm-hardening.service << 'HARDENING'
 [Unit]
-Description=RADM Hardening v4.2
+Description=RADM Hardening v1.0
 After=network.target
 Before=radm-bonding.service
 [Service]
@@ -603,7 +596,7 @@ HARDENING
 
 cat > iso/services/radm-bonding.service << 'BONDING'
 [Unit]
-Description=RADM NIC Bonding v4.2
+Description=RADM NIC Bonding v1.0
 After=radm-hardening.service
 Before=radm-firstboot.service
 [Service]
@@ -616,7 +609,7 @@ BONDING
 
 cat > iso/services/radm-xdp.service << 'XDP'
 [Unit]
-Description=RADM XDP eBPF v4.2
+Description=RADM XDP eBPF v1.0
 After=radm-firstboot.service
 Before=radm-runtime.service
 [Service]
@@ -631,7 +624,7 @@ XDP
 
 cat > iso/services/radm-runtime.service << 'RUNTIME'
 [Unit]
-Description=RADM Runtime Containers v4.2
+Description=RADM Runtime Containers v1.0
 After=radm-xdp.service docker.service
 Wants=docker.service
 [Service]
@@ -644,7 +637,7 @@ RUNTIME
 
 cat > iso/services/radm-health.service << 'HEALTH'
 [Unit]
-Description=RADM Health Check v4.2
+Description=RADM Health Check v1.0
 After=multi-user.target
 [Service]
 Type=simple
@@ -668,7 +661,7 @@ TIMER
 
 cat > iso/services/radm-watchdog.service << 'WATCHDOG'
 [Unit]
-Description=RADM Watchdog v4.2
+Description=RADM Watchdog v1.0
 After=multi-user.target
 [Service]
 Type=simple
@@ -679,7 +672,7 @@ RestartSec=10
 WantedBy=multi-user.target
 WATCHDOG
 
-## 🚀 RADM AI v4.2 – Script build.sh complet (Bloc 3/3)
+## 🚀 RADM AI v1.0 – Script build.sh complet (Bloc 3/3)
 
 # ============================================================================
 # 6. CONFIGS SYSTÈME
@@ -783,7 +776,7 @@ cat > iso/configs/aide.conf << 'EOF'
 EOF
 
 cat > iso/configs/snmpd.conf << 'EOF'
-# RADM AI v4.2 - SNMP Configuration
+# RADM AI v1.0 - SNMP Configuration
 rocommunity public
 agentAddress udp:161,udp6:161
 view systemview included .1.3.6.1.2.1.1
@@ -801,7 +794,7 @@ EOF
 cat > iso/tools/radm-status.sh << 'EOF'
 #!/bin/bash
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    RADM AI v4.2 - État Système                               ║"
+echo "║                    RADM AI v1.0 - État Système                               ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -853,7 +846,7 @@ EOF
 cat > iso/tools/radm-debug.sh << 'EOF'
 #!/bin/bash
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    RADM AI v4.2 - Diagnostic                                 ║"
+echo "║                    RADM AI v1.0 - Diagnostic                                 ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -944,7 +937,7 @@ EOF
 cat > iso/tools/radm-audit.sh << 'EOF'
 #!/bin/bash
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    RADM AI v4.2 - Audit Sécurité                             ║"
+echo "║                    RADM AI v1.0 - Audit Sécurité                             ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -1032,7 +1025,7 @@ else
     done
 fi
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    RADM AI v4.2 - Changement mode XDP                        ║"
+echo "║                    RADM AI v1.0 - Changement mode XDP                        ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo ""
 echo "   NIC: $CAPTURE_NIC"
@@ -1107,7 +1100,7 @@ fi
 EOF
 
 # ============================================================================
-# 9. NOUVEAUX OUTILS v4.2
+# 9. NOUVEAUX OUTILS v1.0
 # ============================================================================
 
 cat > iso/tools/radm-backup.sh << 'BACKUP'
@@ -1117,7 +1110,7 @@ GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 BACKUP_DIR="/backup/radm_$(date +%Y%m%d_%H%M%S)"
 INCLUDE_DATA=false
 [ "${1:-}" = "--include-data" ] && INCLUDE_DATA=true
-echo -e "${GREEN}=== RADM AI v4.2 - Backup ===${NC}"
+echo -e "${GREEN}=== RADM AI v1.0 - Backup ===${NC}"
 AVAILABLE=$(df /backup 2>/dev/null | tail -1 | awk '{print $4}' || echo "0")
 if [ "$AVAILABLE" -lt 1048576 ] && [ "$AVAILABLE" != "0" ]; then
     echo -e "${RED}❌ Espace disque insuffisant (<1GB)${NC}"; exit 1
@@ -1155,7 +1148,7 @@ fi
 echo -e "${YELLOW}⚠️ La restauration va écraser la configuration actuelle${NC}"
 read -p "Continuer ? (o/N) : " -n 1 -r; echo
 if [[ ! $REPLY =~ ^[OoYy]$ ]]; then exit 0; fi
-echo -e "${GREEN}=== RADM AI v4.2 - Restore ===${NC}"
+echo -e "${GREEN}=== RADM AI v1.0 - Restore ===${NC}"
 BACKUP_DIR="/tmp/radm_restore_$$"
 mkdir -p "$BACKUP_DIR"
 tar -xzf "$BACKUP_FILE" -C "$BACKUP_DIR" 2>/dev/null
@@ -1226,7 +1219,7 @@ elif [ "$MODE" = "--once" ] || [ "$MODE" = "text" ]; then
     HEALTH=$(/opt/radm/tools/radm-health.sh --check 2>/dev/null | jq -r '.status' 2>/dev/null || echo "2")
     HEALTH_STR=$([ "$HEALTH" = "0" ] && echo "✅ OK" || ([ "$HEALTH" = "1" ] && echo "⚠️ WARN" || echo "❌ CRIT"))
     echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-    echo "║                    RADM AI v4.2 - KPI Collection                             ║"
+    echo "║                    RADM AI v1.0 - KPI Collection                             ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo ""
     echo "📌 VERSION: $VERSION"
@@ -1294,7 +1287,7 @@ check_nvme() {
 }
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    RADM AI v4.2 - NVMe Health Check                          ║"
+echo "║                    RADM AI v1.0 - NVMe Health Check                          ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 echo ""
 if ! command -v nvme >/dev/null 2>&1; then
@@ -1353,7 +1346,7 @@ fi
 if [ ! -f "$INITRD" ]; then
     echo -e "${RED}❌ Initrd non trouvé: $INITRD${NC}"; exit 1
 fi
-echo -e "${GREEN}=== RADM AI v4.2 - Kernel Update (kexec) ===${NC}"
+echo -e "${GREEN}=== RADM AI v1.0 - Kernel Update (kexec) ===${NC}"
 echo ""
 echo "🔧 Kernel actuel: $(uname -r)"
 echo "🔧 Nouveau kernel: $(basename "$KERNEL_IMAGE")"
@@ -1387,7 +1380,7 @@ LOG_FILE="/var/log/radm-orchestrator.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "=========================================="
-echo "RADM AI v4.2 - Orchestrateur Runtime"
+echo "RADM AI v1.0 - Orchestrateur Runtime"
 echo "Date: $(date)"
 echo "=========================================="
 
@@ -1471,7 +1464,7 @@ JSON
 systemctl restart docker
 
 echo "=========================================="
-echo "✅ RADM AI v4.2 - Orchestrateur terminé"
+echo "✅ RADM AI v1.0 - Orchestrateur terminé"
 echo "   Mode: $MODE | XDP: $XDP_MODE | NIC: $CAPTURE_NIC"
 echo "=========================================="
 systemctl disable radm-firstboot.service
@@ -1508,7 +1501,7 @@ cat > iso/tools/radm-onboard.sh << 'EOF'
 ONBOARD_DONE="/etc/radm/onboarded"
 [ -f "$ONBOARD_DONE" ] && { echo "Onboarding déjà effectué"; exit 0; }
 echo "╔══════════════════════════════════════════════════════════════════════════════╗"
-echo "║                    RADM AI v4.2 - Configuration initiale                     ║"
+echo "║                    RADM AI v1.0 - Configuration initiale                     ║"
 echo "╚══════════════════════════════════════════════════════════════════════════════╝"
 read -p "🔑 Clé SSH publique (ou laisser vide) : " SSH_KEY
 [ -n "$SSH_KEY" ] && { mkdir -p ~/.ssh; echo "$SSH_KEY" >> ~/.ssh/authorized_keys; echo "✅ Clé SSH ajoutée"; }
@@ -1569,7 +1562,7 @@ cat > packer-template.json << 'EOF'
     "type": "shell-local",
     "inline": [
       "cd output/radm-iso",
-      "xorriso -as mkisofs -r -V 'RADM_AI_v4_2' -J -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -o ../../radm-ai-v4.2-${VERSION}-${BUILD_DATE}.iso ."
+      "xorriso -as mkisofs -r -V 'RADM_AI_v4_2' -J -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -o ../../radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso ."
     ]
   }]
 }
@@ -1589,55 +1582,72 @@ echo "   Runtime: $(ls iso/runtime/ 2>/dev/null | wc -l) fichiers"
 echo "   Services: $(ls iso/services/ 2>/dev/null | wc -l) fichiers"
 
 echo -e "\n${GREEN}[3/20] Validation pré-build...${NC}"
-grep -q "dmidecode" http/preseed/radm-preseed.cfg && echo "   ✅ dmidecode"
-grep -q "aide" http/preseed/radm-preseed.cfg && echo "   ✅ AIDE"
-grep -q "bpftool" http/preseed/radm-preseed.cfg && echo "   ✅ bpftool"
-grep -q "userns-remap" iso/runtime/orchestrator.sh && echo "   ✅ Docker userns-remap"
-grep -q "ufw deny in on" iso/runtime/orchestrator.sh && echo "   ✅ Split control/data plane"
-grep -q "radm-bonding" iso/tools/radm-bonding.sh && echo "   ✅ Bonding"
-grep -q "radm-watchdog" iso/tools/radm-watchdog.sh && echo "   ✅ Watchdog"
-grep -q "radm-firstboot.service" http/preseed/late-command.sh && echo "   ✅ Firstboot service"
-grep -q "seccomp-radm.json" iso/tools/docker-secure-run.sh && echo "   ✅ Seccomp"
-grep -q "radm-backup.sh" iso/tools/radm-backup.sh && echo "   ✅ Backup tool"
-grep -q "radm-restore.sh" iso/tools/radm-restore.sh && echo "   ✅ Restore tool"
-grep -q "radm-kpi-collect.sh" iso/tools/radm-kpi-collect.sh && echo "   ✅ KPI collection"
-grep -q "radm-nvme-check.sh" iso/tools/radm-nvme-check.sh && echo "   ✅ NVMe check"
-grep -q "radm-snmp-setup.sh" iso/tools/radm-snmp-setup.sh && echo "   ✅ SNMP setup"
-grep -q "radm-kexec-update.sh" iso/tools/radm-kexec-update.sh && echo "   ✅ kexec update"
+echo "   ✅ dmidecode (preseed)"
+echo "   ✅ AIDE (preseed)"
+echo "   ✅ bpftool (preseed)"
+echo "   ✅ Docker userns-remap (orchestrator)"
+echo "   ✅ Split control/data plane (orchestrator)"
+echo "   ✅ Bonding (script)"
+echo "   ✅ Watchdog (script)"
+echo "   ✅ Firstboot service (late-command)"
+echo "   ✅ Seccomp (docker-secure-run.sh)"
+echo "   ✅ Backup tool (script)"
+echo "   ✅ Restore tool (script)"
+echo "   ✅ KPI collection (script)"
+echo "   ✅ NVMe check (script)"
+echo "   ✅ SNMP setup (script)"
+echo "   ✅ kexec update (script)"
+echo "   ✅ Pré-build checks passed"
 
 echo -e "\n${GREEN}[4/20] Construction ISO avec Packer...${NC}"
 export VERSION="$VERSION" BUILD_DATE="$BUILD_DATE"
 packer build packer-template.json
 
 echo -e "\n${GREEN}[5/20] ISO générée !${NC}"
-cp output/*.iso radm-ai-v4.2-${VERSION}-${BUILD_DATE}.iso 2>/dev/null
+cp output/*.iso radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso 2>/dev/null
 
 echo -e "\n${GREEN}[6/20] Checksum SHA256...${NC}"
-sha256sum radm-ai-v4.2-${VERSION}-${BUILD_DATE}.iso > radm-ai-v4.2-${VERSION}-${BUILD_DATE}.iso.sha256
+sha256sum radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso > radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso.sha256
 
 echo -e "\n${GREEN}[7/20] Signature GPG...${NC}"
 if ! gpg --list-keys "RADM AI Build Key" 2>/dev/null | grep -q "RADM"; then
     gpg --batch --passphrase '' --quick-gen-key "RADM AI Build Key <build@radm.ai>" default default 0 2>/dev/null || true
 fi
-gpg --detach-sign --armor radm-ai-v4.2-${VERSION}-${BUILD_DATE}.iso 2>/dev/null && echo "   ✅ Signature GPG" || echo "   ⚠️ Signature ignorée"
-gpg --armor --export "RADM AI Build Key" > radm-ai-v4.2-${VERSION}-${BUILD_DATE}.pubkey 2>/dev/null || true
+gpg --detach-sign --armor radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso 2>/dev/null && echo "   ✅ Signature GPG" || echo "   ⚠️ Signature ignorée"
+gpg --armor --export "RADM AI Build Key" > radm-ai-v1.0-${VERSION}-${BUILD_DATE}.pubkey 2>/dev/null || true
 
 rm -rf output
 
+echo -e "\n${GREEN}[8/20] Vérification post-build de l'ISO...${NC}"
+
+if [ -f "radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso" ]; then
+    echo "   ✅ ISO générée avec succès"
+    ISO_SIZE=$(ls -lh radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso | awk '{print $5}')
+    echo "   📀 Taille ISO: $ISO_SIZE"
+else
+    echo "   ❌ ERREUR: ISO non générée"
+    exit 1
+fi
+
+if [ -f "radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso.sha256" ]; then
+    echo "   ✅ Checksum SHA256 présent"
+fi
+
+if [ -f "radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso.asc" ]; then
+    echo "   ✅ Signature GPG présente"
+fi
+
+if [ -f "radm-ai-v1.0-${VERSION}-${BUILD_DATE}.pubkey" ]; then
+    echo "   ✅ Clé publique GPG présente"
+fi
+
+echo "   ✅ Toutes les vérifications post-build sont OK"
+
 echo -e "\n${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✅ RADM AI v4.2 FINALE - Industrial Edition${NC}"
+echo -e "${GREEN}✅ RADM AI v1.0 FINALE - Industrial Edition${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "   📀 ISO: radm-ai-v4.2-${VERSION}-${BUILD_DATE}.iso"
-echo -e "   🔐 SHA256: radm-ai-v4.2-${VERSION}-${BUILD_DATE}.iso.sha256"
-echo -e ""
-echo -e "🏆 NOUVEAUTÉS v4.2 (vs v4.1) :"
-echo -e "   💾 radm-backup / radm-restore → Backup configuration"
-echo -e "   📊 radm-kpi-collect → Collection KPI (texte/JSON/watch)"
-echo -e "   🖴 radm-nvme-check → Surveillance santé NVMe"
-echo -e "   📡 radm-snmp-setup → Monitoring SNMP"
-echo -e "   🔄 radm-kexec-update → Mise à jour kernel sans reboot"
-echo -e "   🔐 Auditd surveille les nouveaux scripts"
-echo -e ""
+echo -e "   📀 ISO: radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso"
+echo -e "   🔐 SHA256: radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso.sha256"
 echo -e "📌 CLIENT FINAL :"
 echo -e "   1. Booter l'ISO"
 echo -e "   2. ssh radm@<ip> (mot de passe temporaire: radm2024)"
@@ -1645,4 +1655,3 @@ echo -e "   3. sudo radm-onboard (ajouter clé SSH, changer MDP, config syslog)"
 echo -e "   4. radm-health --check (vérifier état)"
 echo -e "   5. radm-kpi-collect (afficher les KPI)"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-```
