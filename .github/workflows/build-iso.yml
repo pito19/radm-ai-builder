@@ -26,6 +26,10 @@ jobs:
           rm packer_1.15.3_linux_amd64.zip
           packer --version
 
+      - name: Install Packer QEMU plugin
+        run: |
+          packer plugins install github.com/hashicorp/qemu
+
       - name: Convert script to Unix format
         run: dos2unix build.sh
 
