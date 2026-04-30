@@ -1536,11 +1536,22 @@ EOF
 cat > packer-template.json << 'EOF'
 {
   "builders": [{
-    "type": "iso",
+    "type": "qemu",
     "iso_url": "https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso",
     "iso_checksum": "sha256:5fda2c2c81e3fbfbecf57f2943fcb33b56e1d7c90b391e66740ec6c038ffd697",
-    "http_directory": "http",
-    "boot_wait": "5s",
+    "disk_size": "204800",
+    "memory": 8192,
+    "cpus": 4,
+    "ssh_username": "radm",
+    "ssh_password": "radm2024",
+    "ssh_timeout": "60m",
+    "shutdown_command": "sudo poweroff",
+    "output_directory": "output/radm-iso",
+    "format": "qcow2",
+    "accelerator": "kvm",
+    "net_device": "virtio-net",
+    "disk_interface": "virtio",
+    "boot_wait": "10s",
     "boot_command": [
       "<esc><wait>",
       "c<wait>",
@@ -1548,20 +1559,14 @@ cat > packer-template.json << 'EOF'
       "initrd /casper/initrd<enter>",
       "boot<enter>"
     ],
-    "disk_size": 204800,
-    "memory": 16384,
-    "cpus": 16,
-    "ssh_username": "radm",
-    "ssh_password": "radm2024",
-    "ssh_timeout": "60m",
-    "shutdown_command": "sudo poweroff",
-    "output_directory": "output/radm-iso"
+    "http_directory": "http",
+    "headless": true
   }],
   "post-processors": [{
     "type": "shell-local",
     "inline": [
       "cd output/radm-iso",
-      "xorriso -as mkisofs -r -V 'RADM_AI_v4_2' -J -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -o ../../radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso ."
+      "xorriso -as mkisofs -r -V 'RADM_AI_v1_0' -J -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -o ../../radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso ."
     ]
   }]
 }
