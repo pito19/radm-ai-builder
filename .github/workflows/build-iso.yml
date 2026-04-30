@@ -32,18 +32,19 @@ jobs:
       - name: Install Packer QEMU plugin
         run: packer plugins install github.com/hashicorp/qemu
 
-      - name: Download Ubuntu ISO 24.04.3
+      - name: Download Ubuntu ISO 24.04.4
         run: |
-          echo "Téléchargement de l'ISO Ubuntu 24.04.3..."
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+          echo "Téléchargement de l'ISO Ubuntu 24.04.4..."
+          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
                --progress=bar:force \
-               -O ubuntu-24.04.3-live-server-amd64.iso \
-               https://old-releases.ubuntu.com/releases/noble/ubuntu-24.04.3-live-server-amd64.iso
-          ls -lh ubuntu-24.04.3-live-server-amd64.iso
+               -O ubuntu-24.04.4-live-server-amd64.iso \
+               https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso
+          ls -lh ubuntu-24.04.4-live-server-amd64.iso
 
       - name: Verify ISO checksum
         run: |
-          echo "fd6bc7d673159ae03d37d2f12248b54bebc604aca47795573a23ba03c488ffd3  ubuntu-24.04.3-live-server-amd64.iso" > CHECKSUM
+          wget https://releases.ubuntu.com/24.04.4/SHA256SUMS -O SHA256SUMS
+          grep ubuntu-24.04.4-live-server-amd64.iso SHA256SUMS > CHECKSUM
           sha256sum -c CHECKSUM
           echo "✅ Checksum vérifié"
 
