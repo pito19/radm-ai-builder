@@ -19,12 +19,16 @@ jobs:
           sudo apt update
           sudo apt install -y xorriso whois gnupg wget unzip dos2unix
 
-      - name: Install Packer 1.15.3
+      - name: Install Packer 1.11.2
         run: |
-          wget https://releases.hashicorp.com/packer/1.15.3/packer_1.15.3_linux_amd64.zip
-          sudo unzip -o packer_1.15.3_linux_amd64.zip -d /usr/local/bin/
-          rm packer_1.15.3_linux_amd64.zip
+          wget https://releases.hashicorp.com/packer/1.11.2/packer_1.11.2_linux_amd64.zip
+          sudo unzip -o packer_1.11.2_linux_amd64.zip -d /usr/local/bin/
+          rm packer_1.11.2_linux_amd64.zip
           packer --version
+
+      - name: Install Packer ISO plugin
+        run: |
+          packer plugins install github.com/hashicorp/iso
 
       - name: Convert script to Unix format
         run: dos2unix build.sh
