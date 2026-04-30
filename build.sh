@@ -1,4 +1,3 @@
-```bash
 #!/bin/bash
 # =============================================================================
 # RADM AI - ISO Builder v1.0  (Industrielle / Client Final)
