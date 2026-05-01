@@ -1984,3 +1984,4 @@ echo -e "   🔐 SHA256: $ISO_OUTPUT.sha256"
 echo -e "   📦 Mode: 100% OFFLINE - Aucun appel réseau requis"
 echo -e "   📌 CLIENT: booter l'ISO, ssh radm@<ip>, sudo radm-onboard"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+exit 0
