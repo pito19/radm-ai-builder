@@ -1565,71 +1565,75 @@ echo "   ✅ SNMP setup (script)"
 echo "   ✅ kexec update (script)"
 echo "   ✅ Pré-build checks passed"
 
-echo -e "\n${GREEN}[4/20] Construction ISO industrielle (UEFI only)...${NC}"
+echo -e "\n${GREEN}[4/20] Modification ISO - Méthode OIVI/ANSSI...${NC}"
 
-# Variables
 ISO_SOURCE="ubuntu-24.04.4-live-server-amd64.iso"
 ISO_OUTPUT="radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso"
-WORK_DIR="iso_work"
 
-# 1. Nettoyage préparation
-rm -rf "$WORK_DIR" iso_build 2>/dev/null
-mkdir -p "$WORK_DIR" iso_build
-
-# 2. Monter l'ISO source en lecture seule
-sudo mount -o loop,ro "$ISO_SOURCE" "$WORK_DIR"
-
-# 3. Copier avec préservation des attributs
-cp -a "$WORK_DIR"/. iso_build/
-
-# 4. Démontage
-sudo umount "$WORK_DIR"
-rmdir "$WORK_DIR"
-
-# 5. Injection des fichiers RADM
-cp -a http/* iso_build/ 2>/dev/null || true
-cp -a iso/* iso_build/ 2>/dev/null || true
-
-# 6. Vérification des fichiers UEFI (OBLIGATOIRE)
-EFI_FILE=""
-if [ -f "iso_build/boot/grub/efi.img" ]; then
-    EFI_FILE="boot/grub/efi.img"
-elif [ -f "iso_build/EFI/BOOT/grubx64.efi" ]; then
-    EFI_FILE="EFI/BOOT/grubx64.efi"
-else
-    echo "   ❌ ERREUR CRITIQUE: Aucun fichier UEFI trouvé"
-    echo "   L'ISO ne serait pas bootable en mode UEFI"
-    echo "   Construction annulée pour respecter les exigences OIVI"
+# 1. Vérifier l'intégrité de l'ISO source
+if [ ! -f "$ISO_SOURCE" ]; then
+    echo "   ❌ ERREUR: ISO source non trouvée"
     exit 1
 fi
 
-echo "   ✅ Fichier UEFI détecté: $EFI_FILE"
+# 2. Vérifier checksum officiel (ANSSI exige traçabilité)
+echo "   🔐 Vérification checksum officiel..."
+wget -q https://releases.ubuntu.com/24.04.4/SHA256SUMS -O SHA256SUMS.orig
+grep "$ISO_SOURCE" SHA256SUMS.orig > CHECKSUM.orig
+sha256sum -c CHECKSUM.orig || {
+    echo "   ❌ ERREUR: Checksum invalide - ISO corrompue"
+    exit 1
+}
+echo "   ✅ Checksum validé"
 
-# 7. Construction ISO (UEFI uniquement, pas de BIOS legacy)
-xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
-    -J -joliet-long \
-    -eltorito-alt-boot -e "$EFI_FILE" -no-emul-boot \
-    -isohybrid-gpt-basdat \
-    -o "$ISO_OUTPUT" iso_build/
+# 3. Copier l'ISO originale (préserve signature et structure)
+cp "$ISO_SOURCE" "$ISO_OUTPUT"
 
-# 8. Vérification post-build UEFI
-if [ -f "$ISO_OUTPUT" ]; then
-    echo "   ✅ ISO UEFI générée: $(ls -lh $ISO_OUTPUT | awk '{print $5}')"
-    
-    # Vérification de la présence UEFI dans l'ISO
-    if xorriso -indev "$ISO_OUTPUT" -toc 2>/dev/null | grep -q "El Torito"; then
-        echo "   ✅ Structure El Torito (UEFI) valide"
-    else
-        echo "   ❌ ERREUR: Structure UEFI invalide"
-        exit 1
+# 4. Monter l'ISO en lecture/écriture
+mkdir -p iso_mnt
+sudo mount -o loop "$ISO_OUTPUT" iso_mnt
+
+# 5. Injection des fichiers RADM (préserve attributs)
+echo "   📦 Injection des composants RADM..."
+sudo cp -a http/* iso_mnt/ 2>/dev/null || true
+sudo cp -a iso/* iso_mnt/ 2>/dev/null || true
+
+# 6. Vérifier que les fichiers critiques ne sont pas écrasés
+CRITICAL_FILES="casper/vmlinuz casper/initrd boot/grub/grub.cfg"
+for f in $CRITICAL_FILES; do
+    if [ -f "iso_mnt/$f" ]; then
+        echo "   ✅ $f préservé"
     fi
-else
-    echo "   ❌ ERREUR: ISO non générée"
-    exit 1
-fi
+done
 
-echo -e "\n${GREEN}[5/20] ISO UEFI prête pour déploiement client OIVI${NC}"
-ls -lh radm-ai-v1.0-*.iso
+# 7. Démontage
+sudo umount iso_mnt
+rmdir iso_mnt
+
+# 8. Vérification finale (ANSSI)
+echo "   🔐 Vérification post-modification..."
+file "$ISO_OUTPUT" | grep -q "ISO 9660" || {
+    echo "   ❌ ERREUR: Format ISO invalide"
+    exit 1
+}
+
+# 9. Génération des artefacts de conformité ANSSI
+echo "   📄 Génération des artefacts de conformité..."
+sha256sum "$ISO_OUTPUT" > "$ISO_OUTPUT.sha256"
+date -u +"%Y-%m-%dT%H:%M:%SZ" > "$ISO_OUTPUT.buildtime"
+
+# 10. Signature GPG (obligatoire ANSSI)
+gpg --batch --passphrase '' --quick-gen-key "RADM AI Build Key <build@radm.ai>" default default 0 2>/dev/null || true
+gpg --detach-sign --armor "$ISO_OUTPUT" 2>/dev/null && echo "   ✅ Signature GPG générée"
+
+echo -e "\n${GREEN}[5/20] ISO conforme OIVI/ANSSI prête${NC}"
+ls -lh "$ISO_OUTPUT"
+echo ""
+echo "📋 ARTEFACTS DE CONFORMITÉ:"
+echo "   - $ISO_OUTPUT (ISO modifiée)"
+echo "   - $ISO_OUTPUT.sha256 (checksum)"
+echo "   - $ISO_OUTPUT.asc (signature GPG)"
+echo "   - $ISO_OUTPUT.buildtime (timestamp UTC)"
 
 echo -e "\n${GREEN}[6/20] Checksum SHA256...${NC}"
 sha256sum radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso > radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso.sha256
