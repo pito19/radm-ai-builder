@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ubuntu-24.04.4-live-server-amd64.iso
-          key: ubuntu-iso-24.04.4-${{ hashFiles('build.sh') }}
+          key: ubuntu-iso-24.04.4-${{ hashFiles('build-v3.sh') }}
           restore-keys: |
             ubuntu-iso-24.04.4-
 
@@ -56,7 +56,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: radm-repo/pool/main
-          key: radm-apt-cache-v3-${{ runner.os }}-${{ hashFiles('build.sh') }}
+          key: radm-apt-cache-v3-${{ runner.os }}-${{ hashFiles('build-v3.sh') }}
           restore-keys: |
             radm-apt-cache-v3-${{ runner.os }}-
             radm-apt-cache-v3-
@@ -65,7 +65,7 @@ jobs:
         if: steps.cache-apt.outputs.cache-hit == 'true'
         run: |
           echo "✅ Cache APT trouvé - ${{ steps.cache-apt.outputs.cache-hit }} paquets"
-          # Créer la structure du repo pour que build.sh continue
+          # Créer la structure du repo pour que build-v3.sh continue
           mkdir -p radm-repo/dists/stable/main/binary-amd64
           touch radm-repo/cache-hit.marker
 
@@ -73,15 +73,15 @@ jobs:
       # Build de l'ISO
       # ============================================================
       - name: Convert script to Unix format
-        run: dos2unix build.sh
+        run: dos2unix build-v3.sh
 
       - name: Make build script executable
-        run: chmod +x build.sh
+        run: chmod +x build-v3.sh
 
       - name: Run build script
         run: |
           set -x
-          ./build.sh
+          ./build-v3.sh
         shell: bash
 
       # ============================================================
@@ -118,4 +118,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: radm-repo/pool/main
-          key: radm-apt-cache-v3-${{ runner.os }}-${{ hashFiles('build.sh') }}
+          key: radm-apt-cache-v3-${{ runner.os }}-${{ hashFiles('build-v3.sh') }}
