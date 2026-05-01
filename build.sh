@@ -1599,7 +1599,7 @@ sudo cp -a "$WORK_DIR"/. iso_build/
 sudo umount "$WORK_DIR"
 rmdir "$WORK_DIR"
 
-# 5. Injection des fichiers RADM (avec sudo)
+# 5. Injection des fichiers RADM
 echo "   📦 Injection des composants RADM..."
 sudo mkdir -p iso_build/preseed
 sudo cp -a http/preseed/* iso_build/preseed/ 2>/dev/null || true
@@ -1613,19 +1613,41 @@ if [ ! -f "iso_build/preseed/radm-preseed.cfg" ]; then
 fi
 echo "   ✅ Preseed présent"
 
-# 7. Changer les propriétaires pour éviter les problèmes de permission
+# 7. Changer les propriétaires
 sudo chown -R $(id -u):$(id -g) iso_build
 
-# 8. Reconstruction de l'ISO
+# 8. Reconstruction de l'ISO avec détection EFI automatique
 echo "   🔧 Reconstruction de l'ISO finale..."
-xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
-    -J -joliet-long \
-    -b boot/grub/i386-pc/eltorito.img \
-    -c boot.catalog \
-    -no-emul-boot -boot-load-size 4 -boot-info-table \
-    -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot \
-    -isohybrid-gpt-basdat \
-    -o "$ISO_OUTPUT" iso_build/
+
+# Trouver le fichier EFI
+EFI_FILE=""
+if [ -f "iso_build/boot/grub/efi.img" ]; then
+    EFI_FILE="boot/grub/efi.img"
+elif [ -f "iso_build/EFI/BOOT/BOOTx64.EFI" ]; then
+    EFI_FILE="EFI/BOOT/BOOTx64.EFI"
+elif [ -f "iso_build/EFI/BOOT/grubx64.efi" ]; then
+    EFI_FILE="EFI/BOOT/grubx64.efi"
+fi
+
+if [ -n "$EFI_FILE" ]; then
+    echo "   ✅ Fichier EFI trouvé: $EFI_FILE"
+    xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
+        -J -joliet-long \
+        -b boot/grub/i386-pc/eltorito.img \
+        -c boot.catalog \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        -eltorito-alt-boot -e "$EFI_FILE" -no-emul-boot \
+        -isohybrid-gpt-basdat \
+        -o "$ISO_OUTPUT" iso_build/
+else
+    echo "   ⚠️ Aucun fichier EFI trouvé, mode BIOS uniquement"
+    xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
+        -J -joliet-long \
+        -b boot/grub/i386-pc/eltorito.img \
+        -c boot.catalog \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        -o "$ISO_OUTPUT" iso_build/
+fi
 
 # 9. Vérification post-build
 if [ ! -f "$ISO_OUTPUT" ]; then
@@ -1645,12 +1667,6 @@ gpg --batch --passphrase '' --quick-gen-key "RADM AI Build Key <build@radm.ai>" 
 gpg --detach-sign --armor "$ISO_OUTPUT" 2>/dev/null && echo "   ✅ Signature GPG générée"
 
 echo -e "\n${GREEN}[5/20] ISO prête pour déploiement client${NC}"
-ls -lh "$ISO_OUTPUT"
-
-echo -e "\n${GREEN}[5/20] ISO prête pour déploiement client${NC}"
-ls -lh "$ISO_OUTPUT"
-
-echo -e "\n${GREEN}[5/20] ISO conforme OIVI/ANSSI prête${NC}"
 ls -lh "$ISO_OUTPUT"
 echo ""
 echo "📋 ARTEFACTS DE CONFORMITÉ:"
