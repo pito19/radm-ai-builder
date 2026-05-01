@@ -1587,31 +1587,36 @@ sha256sum -c CHECKSUM.orig || {
 }
 echo "   ✅ Checksum validé"
 
-# 3. Extraire l'ISO source
+# 3. Préparation des répertoires
 rm -rf "$WORK_DIR" iso_build 2>/dev/null
 mkdir -p "$WORK_DIR" iso_build
+chmod 755 iso_build
 
+# 4. Extraire l'ISO source
 echo "   📦 Extraction de l'ISO source..."
 sudo mount -o loop,ro "$ISO_SOURCE" "$WORK_DIR"
-cp -a "$WORK_DIR"/. iso_build/
+sudo cp -a "$WORK_DIR"/. iso_build/
 sudo umount "$WORK_DIR"
 rmdir "$WORK_DIR"
 
-# 4. Injection des fichiers RADM
+# 5. Injection des fichiers RADM (avec sudo)
 echo "   📦 Injection des composants RADM..."
-mkdir -p iso_build/preseed
-cp -a http/preseed/* iso_build/preseed/ 2>/dev/null || true
-mkdir -p iso_build/iso
-cp -a iso/* iso_build/iso/ 2>/dev/null || true
+sudo mkdir -p iso_build/preseed
+sudo cp -a http/preseed/* iso_build/preseed/ 2>/dev/null || true
+sudo mkdir -p iso_build/iso
+sudo cp -a iso/* iso_build/iso/ 2>/dev/null || true
 
-# 5. Vérification de la présence du preseed
+# 6. Vérification de la présence du preseed
 if [ ! -f "iso_build/preseed/radm-preseed.cfg" ]; then
     echo "   ❌ ERREUR: preseed non trouvé"
     exit 1
 fi
 echo "   ✅ Preseed présent"
 
-# 6. Reconstruction de l'ISO
+# 7. Changer les propriétaires pour éviter les problèmes de permission
+sudo chown -R $(id -u):$(id -g) iso_build
+
+# 8. Reconstruction de l'ISO
 echo "   🔧 Reconstruction de l'ISO finale..."
 xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
     -J -joliet-long \
@@ -1622,7 +1627,7 @@ xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
     -isohybrid-gpt-basdat \
     -o "$ISO_OUTPUT" iso_build/
 
-# 7. Vérification post-build
+# 9. Vérification post-build
 if [ ! -f "$ISO_OUTPUT" ]; then
     echo "   ❌ ERREUR: ISO non générée"
     exit 1
@@ -1630,14 +1635,17 @@ fi
 
 echo "   ✅ ISO générée: $(ls -lh $ISO_OUTPUT | awk '{print $5}')"
 
-# 8. Génération des artefacts de conformité ANSSI
+# 10. Génération des artefacts de conformité ANSSI
 echo "   📄 Génération des artefacts de conformité..."
 sha256sum "$ISO_OUTPUT" > "$ISO_OUTPUT.sha256"
 date -u +"%Y-%m-%dT%H:%M:%SZ" > "$ISO_OUTPUT.buildtime"
 
-# 9. Signature GPG
+# 11. Signature GPG
 gpg --batch --passphrase '' --quick-gen-key "RADM AI Build Key <build@radm.ai>" default default 0 2>/dev/null || true
 gpg --detach-sign --armor "$ISO_OUTPUT" 2>/dev/null && echo "   ✅ Signature GPG générée"
+
+echo -e "\n${GREEN}[5/20] ISO prête pour déploiement client${NC}"
+ls -lh "$ISO_OUTPUT"
 
 echo -e "\n${GREEN}[5/20] ISO prête pour déploiement client${NC}"
 ls -lh "$ISO_OUTPUT"
