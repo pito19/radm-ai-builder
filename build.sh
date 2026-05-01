@@ -1593,10 +1593,11 @@ cp "$ISO_SOURCE" "$ISO_OUTPUT"
 mkdir -p iso_mnt
 sudo mount -o loop "$ISO_OUTPUT" iso_mnt
 
-# 5. Injection des fichiers RADM (préserve attributs)
-echo "   📦 Injection des composants RADM..."
-sudo cp -a http/* iso_mnt/ 2>/dev/null || true
-sudo cp -a iso/* iso_mnt/ 2>/dev/null || true
+# 5. Injection des fichiers RADM
+sudo mkdir -p iso_mnt/preseed
+sudo cp -a http/preseed/* iso_mnt/preseed/ 2>/dev/null || true
+sudo mkdir -p iso_mnt/iso
+sudo cp -a iso/* iso_mnt/iso/ 2>/dev/null || true
 
 # 6. Vérifier que les fichiers critiques ne sont pas écrasés
 CRITICAL_FILES="casper/vmlinuz casper/initrd boot/grub/grub.cfg"
