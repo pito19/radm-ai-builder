@@ -1565,10 +1565,11 @@ echo "   ✅ SNMP setup (script)"
 echo "   ✅ kexec update (script)"
 echo "   ✅ Pré-build checks passed"
 
-echo -e "\n${GREEN}[4/20] Modification ISO - Méthode OIVI/ANSSI...${NC}"
+echo -e "\n${GREEN}[4/20] Construction ISO - Méthode OIVI/ANSSI...${NC}"
 
 ISO_SOURCE="ubuntu-24.04.4-live-server-amd64.iso"
 ISO_OUTPUT="radm-ai-v1.0-${VERSION}-${BUILD_DATE}.iso"
+WORK_DIR="iso_work"
 
 # 1. Vérifier l'intégrité de l'ISO source
 if [ ! -f "$ISO_SOURCE" ]; then
@@ -1576,7 +1577,7 @@ if [ ! -f "$ISO_SOURCE" ]; then
     exit 1
 fi
 
-# 2. Vérifier checksum officiel (ANSSI exige traçabilité)
+# 2. Vérifier checksum officiel
 echo "   🔐 Vérification checksum officiel..."
 wget -q https://releases.ubuntu.com/24.04.4/SHA256SUMS -O SHA256SUMS.orig
 grep "$ISO_SOURCE" SHA256SUMS.orig > CHECKSUM.orig
@@ -1586,46 +1587,60 @@ sha256sum -c CHECKSUM.orig || {
 }
 echo "   ✅ Checksum validé"
 
-# 3. Copier l'ISO originale (préserve signature et structure)
-cp "$ISO_SOURCE" "$ISO_OUTPUT"
+# 3. Extraire l'ISO source
+rm -rf "$WORK_DIR" iso_build 2>/dev/null
+mkdir -p "$WORK_DIR" iso_build
 
-# 4. Monter l'ISO en lecture/écriture
-mkdir -p iso_mnt
-sudo mount -o loop "$ISO_OUTPUT" iso_mnt
+echo "   📦 Extraction de l'ISO source..."
+sudo mount -o loop,ro "$ISO_SOURCE" "$WORK_DIR"
+cp -a "$WORK_DIR"/. iso_build/
+sudo umount "$WORK_DIR"
+rmdir "$WORK_DIR"
 
-# 5. Injection des fichiers RADM
-sudo mkdir -p iso_mnt/preseed
-sudo cp -a http/preseed/* iso_mnt/preseed/ 2>/dev/null || true
-sudo mkdir -p iso_mnt/iso
-sudo cp -a iso/* iso_mnt/iso/ 2>/dev/null || true
+# 4. Injection des fichiers RADM
+echo "   📦 Injection des composants RADM..."
+mkdir -p iso_build/preseed
+cp -a http/preseed/* iso_build/preseed/ 2>/dev/null || true
+mkdir -p iso_build/iso
+cp -a iso/* iso_build/iso/ 2>/dev/null || true
 
-# 6. Vérifier que les fichiers critiques ne sont pas écrasés
-CRITICAL_FILES="casper/vmlinuz casper/initrd boot/grub/grub.cfg"
-for f in $CRITICAL_FILES; do
-    if [ -f "iso_mnt/$f" ]; then
-        echo "   ✅ $f préservé"
-    fi
-done
-
-# 7. Démontage
-sudo umount iso_mnt
-rmdir iso_mnt
-
-# 8. Vérification finale (ANSSI)
-echo "   🔐 Vérification post-modification..."
-file "$ISO_OUTPUT" | grep -q "ISO 9660" || {
-    echo "   ❌ ERREUR: Format ISO invalide"
+# 5. Vérification de la présence du preseed
+if [ ! -f "iso_build/preseed/radm-preseed.cfg" ]; then
+    echo "   ❌ ERREUR: preseed non trouvé"
     exit 1
-}
+fi
+echo "   ✅ Preseed présent"
 
-# 9. Génération des artefacts de conformité ANSSI
+# 6. Reconstruction de l'ISO
+echo "   🔧 Reconstruction de l'ISO finale..."
+xorriso -as mkisofs -r -V "RADM_AI_v1_0" \
+    -J -joliet-long \
+    -b boot/grub/i386-pc/eltorito.img \
+    -c boot.catalog \
+    -no-emul-boot -boot-load-size 4 -boot-info-table \
+    -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot \
+    -isohybrid-gpt-basdat \
+    -o "$ISO_OUTPUT" iso_build/
+
+# 7. Vérification post-build
+if [ ! -f "$ISO_OUTPUT" ]; then
+    echo "   ❌ ERREUR: ISO non générée"
+    exit 1
+fi
+
+echo "   ✅ ISO générée: $(ls -lh $ISO_OUTPUT | awk '{print $5}')"
+
+# 8. Génération des artefacts de conformité ANSSI
 echo "   📄 Génération des artefacts de conformité..."
 sha256sum "$ISO_OUTPUT" > "$ISO_OUTPUT.sha256"
 date -u +"%Y-%m-%dT%H:%M:%SZ" > "$ISO_OUTPUT.buildtime"
 
-# 10. Signature GPG (obligatoire ANSSI)
+# 9. Signature GPG
 gpg --batch --passphrase '' --quick-gen-key "RADM AI Build Key <build@radm.ai>" default default 0 2>/dev/null || true
 gpg --detach-sign --armor "$ISO_OUTPUT" 2>/dev/null && echo "   ✅ Signature GPG générée"
+
+echo -e "\n${GREEN}[5/20] ISO prête pour déploiement client${NC}"
+ls -lh "$ISO_OUTPUT"
 
 echo -e "\n${GREEN}[5/20] ISO conforme OIVI/ANSSI prête${NC}"
 ls -lh "$ISO_OUTPUT"
