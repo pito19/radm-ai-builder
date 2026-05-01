@@ -359,7 +359,7 @@ EOF
 # 2. LATE-COMMAND – Installation post-install complète + repo offline
 # ============================================================================
 
-cat > http/preseed/late-command.sh << 'EOF'
+cat > http/preseed/late-command.sh << EOF
 #!/bin/bash
 set -e
 
@@ -408,7 +408,7 @@ echo "   ✅ APT configuré pour offline (repo local /opt/radm/repo)"
 cat > /target/etc/radm/version << VERSION
 RADM AI - Network Detection & Response
 Version: 3.0.0
-Build Date: $(date +%Y-%m-%d)
+Build Date: \$(date +%Y-%m-%d)
 Architecture: amd64
 Mode: AIR-GAP OFFLINE
 VERSION
@@ -1674,7 +1674,7 @@ network:
   renderer: networkd
   bonds:
     $BOND_NAME:
-      interfaces: [${CAPTURE_NICS[@]}]
+      interfaces: [$(IFS=,; echo "${CAPTURE_NICS[*]}")]
       parameters:
         mode: 802.3ad
         mii-monitor-interval: 100
