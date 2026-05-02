@@ -1,0 +1,11 @@
+[Unit]
+Description=RADM Health Check v3.0
+After=multi-user.target
+[Service]
+Type=simple
+ExecStart=/opt/radm/tools/radm-health.sh --exporter
+Restart=always
+RestartSec=30
+User=radm
+[Install]
+WantedBy=multi-user.target

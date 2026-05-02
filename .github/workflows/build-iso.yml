@@ -1,4 +1,4 @@
-name: Build RADM AI ISO v3.0 (Air-Gap)
+name: Build RADM AI ISO v3.0 (Air-Gap) - Refactored
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 jobs:
   build-iso:
     runs-on: ubuntu-24.04
-    timeout-minutes: 480  # 8 heures max
+    timeout-minutes: 480
 
     steps:
       - name: Checkout repository
@@ -20,21 +20,21 @@ jobs:
           sudo apt install -y xorriso whois gnupg wget unzip dos2unix dpkg-dev
 
       # ============================================================
-      # CACHE - Ubuntu ISO (réutilisable entre builds)
+      # CACHE - Ubuntu ISO
       # ============================================================
       - name: Cache Ubuntu ISO
         id: cache-iso
         uses: actions/cache@v4
         with:
           path: ubuntu-24.04.4-live-server-amd64.iso
-          key: ubuntu-iso-24.04.4-${{ hashFiles('build-v3.sh') }}
+          key: ubuntu-iso-24.04.4-${{ hashFiles('build.sh') }}
           restore-keys: |
             ubuntu-iso-24.04.4-
 
       - name: Download Ubuntu ISO (if not cached)
         if: steps.cache-iso.outputs.cache-hit != 'true'
         run: |
-          echo "📦 Téléchargement de l'ISO Ubuntu 24.04.4..."
+          echo "Telechargement de l'ISO Ubuntu 24.04.4..."
           wget --progress=bar:force \
                -O ubuntu-24.04.4-live-server-amd64.iso \
                https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso
@@ -42,21 +42,21 @@ jobs:
 
       - name: Verify ISO checksum
         run: |
-          echo "🔐 Vérification du checksum officiel..."
+          echo "Verification du checksum officiel..."
           wget -q https://releases.ubuntu.com/24.04.4/SHA256SUMS -O SHA256SUMS.orig
           grep "ubuntu-24.04.4-live-server-amd64.iso" SHA256SUMS.orig > CHECKSUM.orig
           sha256sum -c CHECKSUM.orig
-          echo "✅ Checksum ISO validé"
+          echo "Checksum ISO valide"
 
       # ============================================================
-      # CACHE - Paquets APT (réutilisable entre builds)
+      # CACHE - Paquets APT
       # ============================================================
       - name: Cache APT packages
         id: cache-apt
         uses: actions/cache@v4
         with:
           path: radm-repo/pool/main
-          key: radm-apt-cache-v3-${{ runner.os }}-${{ hashFiles('build-v3.sh') }}
+          key: radm-apt-cache-v3-${{ runner.os }}-${{ hashFiles('build.sh') }}
           restore-keys: |
             radm-apt-cache-v3-${{ runner.os }}-
             radm-apt-cache-v3-
@@ -64,32 +64,31 @@ jobs:
       - name: Prepare APT cache marker
         if: steps.cache-apt.outputs.cache-hit == 'true'
         run: |
-          echo "✅ Cache APT trouvé - ${{ steps.cache-apt.outputs.cache-hit }} paquets"
-          # Créer la structure du repo pour que build-v3.sh continue
+          echo "Cache APT trouve - utilisation directe"
           mkdir -p radm-repo/dists/stable/main/binary-amd64
           touch radm-repo/cache-hit.marker
 
       # ============================================================
-      # Build de l'ISO
+      # Build de l'ISO (REFACTORISE)
       # ============================================================
       - name: Convert script to Unix format
-        run: dos2unix build-v3.sh
+        run: dos2unix build.sh
 
       - name: Make build script executable
-        run: chmod +x build-v3.sh
+        run: chmod +x build.sh
 
       - name: Run build script
         run: |
           set -x
-          ./build-v3.sh
+          ./build.sh
         shell: bash
 
       # ============================================================
-      # Vérification des artefacts
+      # Verification des artefacts
       # ============================================================
       - name: List generated files
         run: |
-          echo "📀 Fichiers générés :"
+          echo "Fichiers generes :"
           ls -la radm-ai-v3.0-*.iso* 2>/dev/null || echo "No ISO files found"
           ls -la *.sbom.json 2>/dev/null || echo "No SBOM found"
 
@@ -111,11 +110,11 @@ jobs:
           retention-days: 30
 
       # ============================================================
-      # (Optionnel) Upload du cache APT pour les prochains builds
+      # Sauvegarde du cache APT
       # ============================================================
       - name: Save APT cache (if changed)
         if: steps.cache-apt.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: radm-repo/pool/main
-          key: radm-apt-cache-v3-${{ runner.os }}-${{ hashFiles('build-v3.sh') }}
+          key: radm-apt-cache-v3-${{ runner.os }}-${{ hashFiles('build.sh') }}

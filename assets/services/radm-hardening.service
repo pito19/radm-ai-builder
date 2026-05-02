@@ -1,0 +1,10 @@
+[Unit]
+Description=RADM Hardening v3.0
+After=network.target
+Before=radm-xdp.service
+[Service]
+Type=oneshot
+ExecStart=/opt/radm/hardening/apply.sh
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target

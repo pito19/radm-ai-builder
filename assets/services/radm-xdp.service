@@ -1,0 +1,12 @@
+[Unit]
+Description=RADM XDP eBPF v3.0
+After=radm-hardening.service
+Before=radm-firstboot.service
+[Service]
+Type=oneshot
+ExecStart=/opt/radm/xdp/load.sh
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=10
+[Install]
+WantedBy=multi-user.target

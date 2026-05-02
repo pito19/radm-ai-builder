@@ -1,0 +1,10 @@
+[Unit]
+Description=RADM Runtime Containers v3.0
+After=radm-firstboot.service docker.service
+Wants=docker.service
+[Service]
+Type=oneshot
+ExecStart=/opt/radm/runtime/deploy.sh
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target
