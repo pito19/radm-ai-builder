@@ -39,7 +39,7 @@ jobs:
           echo "dos2unix OK"
 
       # ============================================================
-      # CACHE - Ubuntu ISO (AVANT le build)
+      # CACHE - Ubuntu ISO
       # ============================================================
       - name: Cache Ubuntu ISO
         id: cache-iso
@@ -102,7 +102,7 @@ jobs:
           touch radm-repo/cache-hit.marker
 
       # ============================================================
-      # Build de l'ISO
+      # BUILD DE L'ISO (ordre correct)
       # ============================================================
       - name: Convert script to Unix format
         run: dos2unix build.sh
@@ -111,13 +111,10 @@ jobs:
         run: chmod +x build.sh
 
       - name: Run build script
-        run: |
-          set -x
-          ./build.sh
-        shell: bash
+        run: ./build.sh
 
       # ============================================================
-      # Verification des artefacts
+      # VERIFICATION DES ARTEFACTS
       # ============================================================
       - name: List generated files
         run: |
@@ -126,7 +123,7 @@ jobs:
           ls -la *.sbom.json 2>/dev/null || echo "No SBOM found"
 
       # ============================================================
-      # Upload des artefacts
+      # UPLOAD DES ARTEFACTS
       # ============================================================
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
@@ -142,7 +139,7 @@ jobs:
           retention-days: 30
 
       # ============================================================
-      # Sauvegarde du cache APT
+      # SAUVEGARDE DU CACHE APT
       # ============================================================
       - name: Save APT cache (if changed)
         if: steps.cache-apt.outputs.cache-hit != 'true'
