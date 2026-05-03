@@ -1,5 +1,5 @@
 radm-iso-builder/
-├── build.sh
+├── build.sh             
 ├── assets/
 │   ├── preseed/
 │   │   └── radm-preseed.cfg
@@ -14,20 +14,22 @@ radm-iso-builder/
 │   │   └── apply.sh
 │   ├── xdp/
 │   │   ├── radm_xdp.c
+│   │   ├── radm_xdp.sha256  
 │   │   ├── load.sh
 │   │   ├── ringbuf-reader.sh
 │   │   └── xdp-reload.sh
 │   ├── services/
 │   │   ├── radm-hardening.service
-│   │   ├── radm-xdp.service
+│   │   ├── radm-xdp.service   
 │   │   ├── radm-runtime.service
 │   │   ├── radm-health.service
-│   │   └── radm-health.timer
+│   │   ├── radm-health.timer
+│   │   └── radm-aide-check.service
 │   ├── configs/
 │   │   ├── 99-radm-perf.conf
-│   │   ├── 99-radm-security.conf
+│   │   ├── 99-radm-security.conf 
 │   │   ├── limits.conf
-│   │   ├── blacklist-modules.conf
+│   │   ├── blacklist-modules.conf 
 │   │   ├── logrotate-radm.conf
 │   │   ├── mode.conf
 │   │   ├── aide.conf
@@ -47,8 +49,12 @@ radm-iso-builder/
 │   │   ├── radm-onboard.sh
 │   │   ├── radm-bonding.sh
 │   │   ├── radm-watchdog.sh
-│   │   └── radm-syslog-forward.sh
+│   │   ├── radm-syslog-forward.sh
+│   │   └── radm-xdp-loader.sh 
 │   └── runtime/
 │       ├── orchestrator.sh
 │       └── deploy.sh
+├── config/   
+│   └── packages.lock                
 └── .github/workflows/build-iso.yml
+

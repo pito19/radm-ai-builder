@@ -1,12 +1,24 @@
 [Unit]
-Description=RADM XDP eBPF v3.0
-After=radm-hardening.service
+Description=RADM XDP Secure Loader
+After=radm-hardening.service network.target
 Before=radm-firstboot.service
+
 [Service]
 Type=oneshot
-ExecStart=/opt/radm/xdp/load.sh
+ExecStart=/opt/radm/tools/radm-xdp-loader.sh
 RemainAfterExit=yes
-Restart=on-failure
-RestartSec=10
+
+# Systemd hardening (ANSSI compliant)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
 [Install]
 WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=RADM AIDE Integrity Check
+Before=radm-firstboot.service
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c '/usr/bin/aide --check || (echo "INTEGRITY VIOLATION" && /usr/bin/systemctl poweroff)'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
