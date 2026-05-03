@@ -15,33 +15,31 @@ jobs:
         uses: actions/checkout@v4
 
       # ============================================================
-      # INSTALL DEPENDANCES AVEC RETRY ET MIROIR ALTERNATIF
+      # INSTALL DEPENDANCES
       # ============================================================
       - name: Install dependencies
         run: |
           sudo apt update
-          # Ajouter un miroir europeen plus stable
-          sudo sed -i 's/azure.archive.ubuntu.com/fr.archive.ubuntu.com/g' /etc/apt/sources.list
+          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt update
           
-          # Installation avec retry
-          for pkg in xorriso whois gnupg wget unzip dos2unix dpkg-dev; do
-            for i in 1 2 3; do
-              echo "Installation de $pkg (tentative $i/3)..."
-              if sudo apt install -y $pkg; then
-                echo "✅ $pkg installe"
-                break
-              else
-                echo "⚠️ Echec de $pkg, nouvelle tentative dans 5s..."
-                sleep 5
-              fi
-            done
+          for pkg in xorriso whois gnupg wget unzip dpkg-dev; do
+            echo "--- Installation de $pkg ---"
+            sudo apt install -y $pkg
           done
+          
+          echo "--- Installation de dos2unix ---"
+          sudo apt install -y dos2unix
           
           echo "✅ Toutes les dependances installees"
 
+      - name: Test dos2unix
+        run: |
+          dos2unix --version
+          echo "dos2unix OK"
+
       # ============================================================
-      # CACHE - Ubuntu ISO
+      # CACHE - Ubuntu ISO (AVANT le build)
       # ============================================================
       - name: Cache Ubuntu ISO
         id: cache-iso
