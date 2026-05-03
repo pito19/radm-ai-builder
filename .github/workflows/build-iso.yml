@@ -22,21 +22,8 @@ jobs:
           sudo apt update
           sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
           sudo apt update
-          
-          for pkg in xorriso whois gnupg wget unzip dpkg-dev; do
-            echo "--- Installation de $pkg ---"
-            sudo apt install -y $pkg
-          done
-          
-          echo "--- Installation de dos2unix ---"
-          sudo apt install -y dos2unix
-          
-          echo "✅ Toutes les dependances installees"
-
-      - name: Test dos2unix
-        run: |
-          dos2unix --version
-          echo "dos2unix OK"
+          sudo apt install -y xorriso whois gnupg wget unzip dpkg-dev
+          echo "✅ Dependances installees"
 
       # ============================================================
       # CACHE - Ubuntu ISO
@@ -102,13 +89,13 @@ jobs:
           touch radm-repo/cache-hit.marker
 
       # ============================================================
-      # BUILD DE L'ISO (ordre correct)
+      # BUILD DE L'ISO
       # ============================================================
-      - name: Convert script to Unix format
-        run: dos2unix build.sh
-
-      - name: Make build script executable
-        run: chmod +x build.sh
+      - name: Fix line endings
+        run: |
+          sed -i 's/\r$//' build.sh
+          chmod +x build.sh
+          echo "✅ build.sh pret"
 
       - name: Run build script
         run: ./build.sh
