@@ -14,9 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ============================================================
-      # INSTALL DEPENDANCES (sans dos2unix)
-      # ============================================================
       - name: Install dependencies
         run: |
           sudo apt update
@@ -25,9 +22,6 @@ jobs:
           sudo apt install -y xorriso whois gnupg wget unzip dpkg-dev
           echo "✅ Dependances installees"
 
-      # ============================================================
-      # CACHE - Ubuntu ISO
-      # ============================================================
       - name: Cache Ubuntu ISO
         id: cache-iso
         uses: actions/cache@v4
@@ -69,9 +63,6 @@ jobs:
             echo "⚠️ Impossible de telecharger le checksum (build continue)"
           fi
 
-      # ============================================================
-      # CACHE - Paquets APT
-      # ============================================================
       - name: Cache APT packages
         id: cache-apt
         uses: actions/cache@v4
@@ -88,9 +79,6 @@ jobs:
           mkdir -p radm-repo/dists/stable/main/binary-amd64
           touch radm-repo/cache-hit.marker
 
-      # ============================================================
-      # BUILD DE L'ISO
-      # ============================================================
       - name: Fix line endings
         run: |
           sed -i 's/\r$//' build.sh
@@ -100,18 +88,12 @@ jobs:
       - name: Run build script
         run: ./build.sh
 
-      # ============================================================
-      # VERIFICATION DES ARTEFACTS
-      # ============================================================
       - name: List generated files
         run: |
           echo "Fichiers generes :"
           ls -la radm-ai-v4.0-*.iso* 2>/dev/null || echo "No ISO files found"
           ls -la *.sbom.json 2>/dev/null || echo "No SBOM found"
 
-      # ============================================================
-      # UPLOAD DES ARTEFACTS
-      # ============================================================
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
@@ -125,9 +107,6 @@ jobs:
           compression-level: 0
           retention-days: 30
 
-      # ============================================================
-      # SAUVEGARDE DU CACHE APT
-      # ============================================================
       - name: Save APT cache (if changed)
         if: steps.cache-apt.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
