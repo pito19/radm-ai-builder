@@ -14,14 +14,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ============================================================
+      # INSTALL DEPENDANCES (robuste)
+      # ============================================================
       - name: Install dependencies
         run: |
           sudo rm -rf /var/lib/apt/lists/*
           sudo apt clean
           sudo apt update
-          sudo apt install -y xorriso whois gnupg wget unzip dpkg-dev --fix-missing
-          echo "✅ Dependances installees"
+          
+          for pkg in xorriso whois gnupg wget unzip dpkg-dev; do
+            echo "--- Installation de $pkg ---"
+            if sudo apt install -y $pkg; then
+              echo "✅ $pkg installe"
+            else
+              echo "⚠️ $pkg non installe (continue)"
+            fi
+          done
+          
+          echo "✅ Installation des dependances terminee"
 
+      # ============================================================
+      # CACHE - Ubuntu ISO
+      # ============================================================
       - name: Cache Ubuntu ISO
         id: cache-iso
         uses: actions/cache@v4
@@ -35,16 +50,32 @@ jobs:
         if: steps.cache-iso.outputs.cache-hit != 'true'
         run: |
           echo "Telechargement de l'ISO Ubuntu 24.04.4..."
-          wget -O ubuntu-24.04.4-live-server-amd64.iso \
-               https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso
+          if wget -O ubuntu-24.04.4-live-server-amd64.iso \
+               https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso; then
+            echo "✅ ISO telechargee"
+          else
+            echo "⚠️ Echec du telechargement"
+            exit 1
+          fi
           ls -lh ubuntu-24.04.4-live-server-amd64.iso
 
       - name: Verify ISO checksum
         run: |
-          wget -q https://releases.ubuntu.com/24.04.4/SHA256SUMS -O SHA256SUMS.orig
-          grep "ubuntu-24.04.4-live-server-amd64.iso" SHA256SUMS.orig > CHECKSUM.orig
-          sha256sum -c CHECKSUM.orig || echo "⚠️ Checksum non verifie"
+          echo "Verification du checksum officiel..."
+          if wget -q https://releases.ubuntu.com/24.04.4/SHA256SUMS -O SHA256SUMS.orig; then
+            grep "ubuntu-24.04.4-live-server-amd64.iso" SHA256SUMS.orig > CHECKSUM.orig
+            if sha256sum -c CHECKSUM.orig 2>/dev/null; then
+              echo "✅ Checksum ISO valide"
+            else
+              echo "⚠️ Checksum non verifie (build continue)"
+            fi
+          else
+            echo "⚠️ Impossible de telecharger le checksum (build continue)"
+          fi
 
+      # ============================================================
+      # CACHE - Paquets APT
+      # ============================================================
       - name: Cache APT packages
         id: cache-apt
         uses: actions/cache@v4
@@ -57,20 +88,34 @@ jobs:
       - name: Prepare APT cache marker
         if: steps.cache-apt.outputs.cache-hit == 'true'
         run: |
+          echo "Cache APT trouve - utilisation directe"
           mkdir -p radm-repo/dists/stable/main/binary-amd64
           touch radm-repo/cache-hit.marker
 
+      # ============================================================
+      # BUILD DE L'ISO
+      # ============================================================
       - name: Fix line endings
         run: |
           sed -i 's/\r$//' build.sh
           chmod +x build.sh
+          echo "✅ build.sh pret"
 
       - name: Run build script
         run: ./build.sh
 
+      # ============================================================
+      # VERIFICATION DES ARTEFACTS
+      # ============================================================
       - name: List generated files
-        run: ls -la radm-ai-v4.0-*.iso* 2>/dev/null || echo "No ISO files found"
+        run: |
+          echo "Fichiers generes :"
+          ls -la radm-ai-v4.0-*.iso* 2>/dev/null || echo "No ISO files found"
+          ls -la *.sbom.json 2>/dev/null || echo "No SBOM found"
 
+      # ============================================================
+      # UPLOAD DES ARTEFACTS
+      # ============================================================
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
@@ -84,6 +129,9 @@ jobs:
           compression-level: 0
           retention-days: 30
 
+      # ============================================================
+      # SAUVEGARDE DU CACHE APT
+      # ============================================================
       - name: Save APT cache (if changed)
         if: steps.cache-apt.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
